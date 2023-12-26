@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Файл для записи серийных номеров
-output_file="serial_numbers"
+output_file="./serial_numbers"
 
 # Функция, которая будет вызываться при подключении USB-флешки
 function on_usb_connect() {

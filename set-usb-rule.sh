@@ -17,21 +17,26 @@ fi
 
 # Создаём начало файла правил
 echo 'ACTION!="add", GOTO="dont_remove_usb"' >"$udev_rules_file"
-echo 'ENV{ID_BUS}!="usb", GOTO="dont_remove_usb"' >>"$udev_rules_file"
-echo 'ENV{ID_TYPE}!="disk", GOTO="dont_remove_usb"' >>"$udev_rules_file"
 
 # Читаем серийные номера и добавляем соответствующие правила
 while IFS= read -r serial; do
   echo "ENV{ID_SERIAL_SHORT}==\"$serial\", GOTO=\"dont_remove_usb\"" >>"$udev_rules_file"
 done <"$input_file"
 
-# Добавляем оставшуюся часть правил
-echo 'ENV{ID_BUS}=="usb", RUN+="/bin/sh -c '\''echo 1 > /sys$DEVPATH/device/delete'\''"' >>"$udev_rules_file"
-echo 'LABEL="dont_remove_usb"' >>"$udev_rules_file"
+{
+  # shellcheck disable=SC2016
+  echo 'ENV{ID_TYPE}=="cd", RUN+="/usr/sbin/astra-mount $devpath"'
+  # shellcheck disable=SC2016
+  echo 'ENV{ID_BUS}=="usb", ENV{ID_TYPE}=="disk", RUN+="/usr/sbin/astra-mount $devpath"'
+  # shellcheck disable=SC2016
+  echo 'ENV{ID_BUS}=="ata", ENV{ID_TYPE}=="disk", RUN+="/usr/sbin/astra-mount $devpath"'
+  echo 'LABEL="dont_remove_usb"'
+} >>"$udev_rules_file"
 
 echo "Правила udev были успешно записаны в файл $udev_rules_file."
 
 echo "Применени правил udev..."
-# udevadm control --reload-rules
-# udevadm trigger
+udevadm control --reload-rules
+sleep 1
+udevadm trigger
 echo "Правила udev были успешно применены"
