@@ -1,7 +1,7 @@
 ## Cценарий для удаления устройства
-Тестовый скрипт для отказа в подключении устройства
 
-В примере использовался 
+
+Для корректного удаления используется скрипт `/usr/sbin/astra-mount`
 ```bash
 #!/bin/bash
  
@@ -22,9 +22,9 @@ while true ; do
 done
 ```
 Данный сценарий:
-    - Получает в качестве единственного аргумента путь к устройству;
-    - Последовательно ищет по полученному пути к устройству родительское устройство, поддерживающее операцию удаления;
-    - Выполняет операцию удаления;
+ - Получает в качестве единственного аргумента путь к устройству;
+ - Последовательно ищет по полученному пути к устройству родительское устройство, поддерживающее операцию удаления;
+ - Выполняет операцию удаления;
 
 Пример работы:
  - Создать файл /usr/sbin/astra-mount со содержимым выше.
@@ -32,35 +32,35 @@ done
 ```bash
 sudo chmod +x,go-w /usr/sbin/astra-mount
 ```
-- Создать udev-правило проверки параметров устройств для вызова сценария удаления устройства, например, в файле /etc/udev/rules.d/99-local.rules:
-```
-ACTION=="add", ENV{ID_BUS}=="usb", ENV{DEVTYPE}=="disk", RUN+="/usr/sbin/astra-mount $devpath"
-```
-Данное правило при добавлении (ACTION=="add") устройств USB (ENV{ID_BUS}=="usb") типа disk (ENV{DEVTYPE}=="disk") вызывает сценарий удаления (/usr/sbin/astra-mount), передавая вызываемому сценарию путь к устройству ($devpath).
-
 
 ## Создание правила блокировки
 ```bash
 vim /etc/udev/rules.d/99-usb-block.rules
 ```
-~ Старый вариант
-```
-ACTION!="add", GOTO="dont_remove_usb"
-ENV{ID_BUS}!="usb", GOTO="dont_remove_usb"
-ENV{ID_TYPE}=="cd", RUN+="/usr/sbin/astra-mount $devpath"
-ENV{ID_TYPE}!="disk", GOTO="dont_remove_usb"
-ENV{ID_BUS}=="usb", RUN+="/usr/sbin/astra-mount $devpath"
-LABEL="dont_remove_usb"
-```
 
-Новый вариант
+Текст файла /etc/udev/rules.d/99-usb-block.rules: 
 
 ```
 ACTION!="add", GOTO="dont_remove_usb"
+
+ENV{ID_SERIAL_SHORT}=="<СЕРИЙНЫЙ НОМЕР РАЗРЕШЕННОГО УСТРОЙСТВА>", GOTO="dont_remove_usb"
 
 ENV{ID_TYPE}=="cd", RUN+="/usr/sbin/astra-mount $devpath"
 ENV{ID_BUS}=="usb", ENV{ID_TYPE}=="disk", RUN+="/usr/sbin/astra-mount $devpath"
 ENV{ID_BUS}=="ata", ENV{ID_TYPE}=="disk", RUN+="/usr/sbin/astra-mount $devpath"
 
 LABEL="dont_remove_usb"
+
+```
+
+## Определение подключаемого устройства
+
+Для определения имени подключаемого устройства (такое как `/dev/sdb`) используется команда:
+```bash
+udevadm monitor --udev --subsystem-match=block
+``` 
+Это запустит скрипт-мониторинг. При подключении устройства будет выводиться информация о подключении и данные устройства.
+Для определения серийного номера (например для /dev/sdb):
+```
+udevadm info --query=property --name=/dev/sdb | grep ID_SERIAL_SHORT
 ```
