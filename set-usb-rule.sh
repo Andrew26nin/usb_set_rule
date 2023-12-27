@@ -35,8 +35,8 @@ done <"$input_file"
 
 echo "Правила udev были успешно записаны в файл $udev_rules_file."
 
-echo "Применени правил udev..."
+echo "Применени правил udev. Ожидайте 5 секунд..."
 udevadm control --reload-rules
-sleep 1
+sleep 5
 udevadm trigger
 echo "Правила udev были успешно применены"

@@ -1,7 +1,25 @@
 #!/bin/bash
 
+# Путь к файлу правил udev
+udev_rules_file="/etc/udev/rules.d/99-usb-block.rules"
 # Файл для записи серийных номеров
 output_file="./serial_numbers"
+
+# Проверяем, существует ли файл
+if [ -f "$udev_rules_file" ]; then
+	# Создаём бэкап с текущей датой и временем в названии
+	backup_file="${udev_rules_file}.$(date +%Y%m%d%H%M%S).bak"
+	mv "$udev_rules_file" "$backup_file"
+
+	echo "Отключение правила блокирования USB. Бэкап создан: $backup_file"
+	echo "Применени правила udev. Ожидайте 5 секунд..."
+	udevadm control --reload-rules
+	sleep 5
+	udevadm trigger
+	echo "Правило udev было успешно отключено"
+else
+	echo "Файл правила не существует. Бэкап не требуется."
+fi
 
 # Функция, которая будет вызываться при подключении USB-флешки
 function on_usb_connect() {
